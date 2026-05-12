@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/screenshot.png" alt="Stick — sticky notes on macOS" width="900">
+</p>
+
 # Stick — Sticky Notes for macOS
 
 **Your thoughts, always in view. Never in the way.**
@@ -47,3 +51,29 @@ To keep it running after closing the terminal, copy the binary somewhere on your
 ## Where notes are stored
 
 Notes are saved as JSON in your Application Support folder. The path is shown at the bottom of the dashboard window — click it to reveal the file in Finder.
+
+---
+
+## Contributing
+
+Stick is open source and contributions are very welcome. Whether it's a bug fix, a new feature, a design tweak, or just an idea — jump in.
+
+**How to contribute:**
+
+1. Fork the repo and create a branch: `git checkout -b my-feature`
+2. Make your changes — keep them focused and minimal
+3. Test the app: `swift run`
+4. Commit with a clear message and open a pull request
+
+**Good first contributions:**
+
+- Bug reports (open an [Issue](https://github.com/jvalaj/stick/issues))
+- UI polish, animations, accessibility improvements
+- New features that fit Stick's minimal philosophy (less is more)
+- Documentation improvements
+
+Please keep the spirit of Stick: native, minimal, beautiful. No new dependencies unless absolutely necessary.
+
+## License
+
+Stick is released under the [MIT License](LICENSE). You're free to use, modify, distribute, and even sell it. Just keep the copyright notice in your copies.
