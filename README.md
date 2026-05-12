@@ -1,3 +1,4 @@
+<img width="1512" height="982" alt="Screenshot 2026-05-12 at 3 59 42 PM" src="https://github.com/user-attachments/assets/47965465-ce0d-4156-b629-11b0723ce8c5" />
 <p align="center">
   <img src="docs/screenshot.png" alt="Stick — sticky notes on macOS" width="900">
 </p>
