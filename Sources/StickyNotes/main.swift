@@ -41,6 +41,36 @@ final class Store {
 
 final class AppState: ObservableObject {
     @Published var stickers: [StickerData] = []
+    @Published var glassVariant: Int = UserDefaults.standard.integer(forKey: "glassVariant") {
+        didSet { UserDefaults.standard.set(glassVariant, forKey: "glassVariant") }
+    }
+    @Published var regularBgOpacity: CGFloat = {
+        let v = UserDefaults.standard.object(forKey: "regularBgOpacity") as? Double
+        return CGFloat(v ?? 0.0)
+    }() {
+        didSet { UserDefaults.standard.set(Double(regularBgOpacity), forKey: "regularBgOpacity") }
+    }
+    @Published var fontSize: CGFloat = {
+        let v = UserDefaults.standard.object(forKey: "fontSize") as? Double
+        return CGFloat(v ?? 14)
+    }() {
+        didSet { UserDefaults.standard.set(Double(fontSize), forKey: "fontSize") }
+    }
+    @Published var fontColor: Color = AppState.loadColor("fontColor", default: .white) {
+        didSet { AppState.saveColor(fontColor, "fontColor") }
+    }
+
+    static func loadColor(_ key: String, default def: Color) -> Color {
+        guard let arr = UserDefaults.standard.array(forKey: key) as? [Double], arr.count == 4 else { return def }
+        return Color(.sRGB, red: arr[0], green: arr[1], blue: arr[2], opacity: arr[3])
+    }
+    static func saveColor(_ c: Color, _ key: String) {
+        let ns = NSColor(c).usingColorSpace(.sRGB) ?? NSColor.white
+        UserDefaults.standard.set(
+            [Double(ns.redComponent), Double(ns.greenComponent), Double(ns.blueComponent), Double(ns.alphaComponent)],
+            forKey: key
+        )
+    }
 
     func upsert(_ s: StickerData) {
         if let i = stickers.firstIndex(where: { $0.id == s.id }) {
@@ -61,24 +91,21 @@ final class AppState: ObservableObject {
     }
 }
 
-// MARK: - Translucent background
+// MARK: - Liquid Glass background
 
-struct VisualEffectBlur: NSViewRepresentable {
-    var material: NSVisualEffectView.Material = .hudWindow
-    var blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
+struct FrostedBackground: View {
+    @ObservedObject var state: AppState
+    let cornerRadius: CGFloat
 
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let v = NSVisualEffectView()
-        v.material = material
-        v.blendingMode = blendingMode
-        v.state = .active
-        v.isEmphasized = true
-        return v
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        nsView.material = material
-        nsView.blendingMode = blendingMode
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        let glass: Glass = (state.glassVariant == 1) ? .clear : .regular
+        return ZStack {
+            Color.clear.glassEffect(glass, in: shape)
+            if state.glassVariant == 0 {
+                Color.white.opacity(state.regularBgOpacity).clipShape(shape)
+            }
+        }
     }
 }
 
@@ -131,12 +158,12 @@ struct StickerView: View {
 
             // Body
             TextEditor(text: text)
-                .font(.system(size: 14, design: .rounded))
+                .font(.system(size: state.fontSize, design: .rounded))
                 .scrollContentBackground(.hidden)
                 .padding(10)
-                .foregroundColor(.primary)
+                .foregroundColor(state.fontColor)
         }
-        .background(VisualEffectBlur(material: .hudWindow))
+        .background(FrostedBackground(state: state, cornerRadius: 14))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -197,10 +224,14 @@ final class StickerWindow: NSWindow {
             }
         )
         self.contentView = FirstMouseHostingView(rootView: view)
+        installActiveBlurFix(on: self)
     }
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+    // Keep Liquid Glass `.clear` from desaturating when another app takes
+    // focus. Glass reads `isMainWindow` to decide active vs. inactive look.
+    override var isMainWindow: Bool { true }
 }
 
 // NSHostingView subclass that lets clicks reach the SwiftUI gestures even
@@ -208,6 +239,32 @@ final class StickerWindow: NSWindow {
 // on the very first mousedown instead of requiring an activation click first.
 final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func layout() {
+        super.layout()
+        forceActiveVisualEffects(in: self)
+    }
+}
+
+// Walk subview tree and force every NSVisualEffectView (including those the
+// SwiftUI `.glassEffect` hosts) to stay active when the window loses focus.
+func forceActiveVisualEffects(in view: NSView) {
+    if let ve = view as? NSVisualEffectView {
+        ve.state = .active
+    }
+    for sub in view.subviews { forceActiveVisualEffects(in: sub) }
+}
+
+// Window mixin: re-force active state whenever key/main status changes.
+func installActiveBlurFix(on window: NSWindow) {
+    let nc = NotificationCenter.default
+    let apply: (Notification) -> Void = { _ in
+        guard let v = window.contentView else { return }
+        DispatchQueue.main.async { forceActiveVisualEffects(in: v) }
+    }
+    for name in [NSWindow.didResignKeyNotification, NSWindow.didResignMainNotification,
+                 NSWindow.didBecomeKeyNotification, NSWindow.didBecomeMainNotification] {
+        nc.addObserver(forName: name, object: window, queue: .main, using: apply)
+    }
 }
 
 // MARK: - Dashboard
@@ -287,6 +344,12 @@ struct DashboardView: View {
 
             Divider().background(Color.primary.opacity(0.15))
 
+            SettingsPanel(state: state)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 6)
+
+            Divider().background(Color.primary.opacity(0.15))
+
             HStack(spacing: 6) {
                 Image(systemName: "folder")
                     .font(.system(size: 10))
@@ -306,7 +369,7 @@ struct DashboardView: View {
                 NSWorkspace.shared.activateFileViewerSelecting([Store.shared.url])
             }
         }
-        .background(VisualEffectBlur(material: .hudWindow))
+        .background(FrostedBackground(state: state, cornerRadius: 16))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -362,6 +425,77 @@ struct StickerRow: View {
     }
 }
 
+struct SettingsPanel: View {
+    @ObservedObject var state: AppState
+    @State private var expanded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button(action: { withAnimation(.easeInOut(duration: 0.15)) { expanded.toggle() } }) {
+                HStack(spacing: 4) {
+                    Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 9, weight: .semibold))
+                    Text("Appearance")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                    Spacer()
+                }
+                .foregroundColor(.secondary)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if expanded {
+                Group {
+                    sliderRow("textformat.size", Binding(
+                        get: { (state.fontSize - 10) / 14 },
+                        set: { state.fontSize = 10 + $0 * 14 }
+                    ))
+                    HStack(spacing: 8) {
+                        Image(systemName: "paintpalette")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                            .frame(width: 12)
+                        ColorPicker("Font", selection: $state.fontColor, supportsOpacity: true)
+                            .labelsHidden()
+                        Text("Font color")
+                            .font(.system(size: 10, design: .rounded))
+                            .foregroundColor(.secondary)
+                        Spacer()
+                    }
+
+                    Divider().padding(.vertical, 2)
+
+                    Picker("Variant", selection: $state.glassVariant) {
+                        Text("Regular").tag(0)
+                        Text("Clear").tag(1)
+                    }
+                    .pickerStyle(.segmented)
+                    .controlSize(.mini)
+
+                    if state.glassVariant == 0 {
+                        sliderRow("rectangle.fill", $state.regularBgOpacity)
+                    }
+                }
+                .transition(.opacity)
+            }
+        }
+    }
+
+    private func sliderRow(_ icon: String, _ binding: Binding<CGFloat>) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+                .frame(width: 12)
+            Slider(value: Binding(
+                get: { Double(binding.wrappedValue) },
+                set: { binding.wrappedValue = CGFloat($0) }
+            ), in: 0...1)
+            .controlSize(.mini)
+        }
+    }
+}
+
 final class DashboardWindow: NSWindow {
     init(rootView: NSView) {
         super.init(
@@ -379,9 +513,11 @@ final class DashboardWindow: NSWindow {
         self.collectionBehavior = []
         self.minSize = NSSize(width: 240, height: 240)
         self.contentView = rootView
+        installActiveBlurFix(on: self)
     }
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+    override var isMainWindow: Bool { true }
 }
 
 // MARK: - App delegate
@@ -399,7 +535,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Menu bar
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let b = statusItem.button {
-            b.image = NSImage(systemSymbolName: "note.text", accessibilityDescription: "Stick")
+            b.image = NSImage(systemSymbolName: "paperclip", accessibilityDescription: "Stick")
             b.image?.isTemplate = true
         }
         let menu = NSMenu()
