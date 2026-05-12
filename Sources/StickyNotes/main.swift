@@ -182,8 +182,8 @@ final class StickerWindow: NSWindow {
         self.isOpaque = false
         self.backgroundColor = .clear
         self.hasShadow = false // SwiftUI provides shadow
-        self.level = .normal
-        self.collectionBehavior = [.canJoinAllSpaces, .stationary]
+        self.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopIconWindow)))
+        self.collectionBehavior = [.stationary, .ignoresCycle]
         self.minSize = NSSize(width: 160, height: 140)
 
         let id = data.id
@@ -374,9 +374,9 @@ final class DashboardWindow: NSWindow {
         self.isOpaque = false
         self.backgroundColor = .clear
         self.hasShadow = false
-        self.level = .normal
+        self.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopIconWindow)))
         self.isMovableByWindowBackground = true
-        self.collectionBehavior = [.canJoinAllSpaces]
+        self.collectionBehavior = [.stationary, .ignoresCycle]
         self.minSize = NSSize(width: 240, height: 240)
         self.contentView = rootView
     }
