@@ -17,3 +17,33 @@ Most note apps live in a tab. Stick lives on your desktop — pinned, present, a
 - ✦ Gorgeous minimal design — looks like it shipped with your Mac
 - ✦ Lightweight — launches instantly, uses almost no memory
 - ✦ Fully open source — read it, fork it, make it yours
+
+---
+
+## Requirements
+
+- macOS 13 or later
+- Xcode Command Line Tools (for `swift`) — install with `xcode-select --install`
+
+## Run
+
+```bash
+git clone https://github.com/jvalaj/stick.git
+cd stick
+swift run
+```
+
+The app launches as a menu-bar item with a dashboard. Click **+ New** to create a sticky note.
+
+## Build a release binary
+
+```bash
+swift build -c release
+.build/release/StickyNotes
+```
+
+To keep it running after closing the terminal, copy the binary somewhere on your `PATH` or wrap it in an `.app` bundle.
+
+## Where notes are stored
+
+Notes are saved as JSON in your Application Support folder. The path is shown at the bottom of the dashboard window — click it to reveal the file in Finder.
