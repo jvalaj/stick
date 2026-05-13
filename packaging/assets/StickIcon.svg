@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="256" y1="96" x2="768" y2="928" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2b2b2d"/>
+      <stop offset="1" stop-color="#080809"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="32" stdDeviation="28" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+    <filter id="markShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000000" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <rect x="104" y="104" width="816" height="816" rx="184" fill="url(#bg)" filter="url(#shadow)"/>
+  <path
+    d="M827.29688 500.67598C835.96773 509.3453 835.96556 523.40316 827.29036 532.06866L499.07711 859.78511C337.6163 1021.03336 61.51113 744.91265 222.92266 583.64136L620.07491 180.95837C741.50905 59.51402 927.11656 245.11182 805.8008 366.3508L408.6466 769.03847C363.23967 814.35422 283.4593 734.69031 328.96675 689.42836L662.10339 350.75602C682.42189 330.09989 715.01173 362.70006 694.82448 383.18861L361.59361 721.96598C347.98412 735.54312 372.00525 759.67339 385.78731 746.19516L782.9415 343.50748C860.16785 266.42769 742.64383 148.78666 665.62755 225.78676L268.47531 628.46977C151.16278 745.62867 330.21111 924.65004 447.51375 807.50111L775.7333 479.79377C784.40021 471.12772 818.6304 492.00958 827.29688 500.67598Z"
+    fill="#f4f4f2"
+    filter="url(#markShadow)"
+    transform="translate(0 0)"/>
+</svg>
