@@ -64,11 +64,12 @@ cd stick
 ./scripts/build-app.sh
 ```
 
-The app and release zip are created at:
+The app and release downloads are created at:
 
 ```text
 dist/Stick.app
 dist/Stick.zip
+dist/Stick.dmg
 ```
 
 ## Requirements

@@ -6,13 +6,14 @@ APP_NAME="Stick"
 EXECUTABLE_NAME="StickyNotes"
 DIST_DIR="$ROOT_DIR/dist"
 APP_DIR="$DIST_DIR/$APP_NAME.app"
+DMG_STAGING_DIR="$DIST_DIR/dmg"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 
 cd "$ROOT_DIR"
 
-rm -rf "$APP_DIR" "$DIST_DIR/$APP_NAME.zip"
+rm -rf "$APP_DIR" "$DMG_STAGING_DIR" "$DIST_DIR/$APP_NAME.zip" "$DIST_DIR/$APP_NAME.dmg"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
 swift build -c release
@@ -56,5 +57,17 @@ chmod +x "$MACOS_DIR/$APP_NAME"
   ditto -c -k --keepParent "$APP_NAME.app" "$APP_NAME.zip"
 )
 
+mkdir -p "$DMG_STAGING_DIR"
+cp -R "$APP_DIR" "$DMG_STAGING_DIR/$APP_NAME.app"
+ln -s /Applications "$DMG_STAGING_DIR/Applications"
+hdiutil create \
+  -volname "$APP_NAME" \
+  -srcfolder "$DMG_STAGING_DIR" \
+  -ov \
+  -format UDZO \
+  "$DIST_DIR/$APP_NAME.dmg" >/dev/null
+rm -rf "$DMG_STAGING_DIR"
+
 echo "Built $APP_DIR"
 echo "Built $DIST_DIR/$APP_NAME.zip"
+echo "Built $DIST_DIR/$APP_NAME.dmg"
