@@ -1,42 +1,24 @@
-<img width="1512" height="982" alt="Screenshot 2026-05-12 at 3 59 42 PM" src="https://github.com/user-attachments/assets/47965465-ce0d-4156-b629-11b0723ce8c5" />
+<img width="1512" height="982" alt="Stick screenshot" src="https://github.com/user-attachments/assets/47965465-ce0d-4156-b629-11b0723ce8c5" />
 
-# Stick — Sticky Notes for macOS
+# Stick
 
-**Your thoughts, always in view. Never in the way.**
+**Sticky notes for macOS. Native, minimal, and always in view.**
 
-Stick is a free, open-source sticky notes app built natively for macOS. No Electron. No bloat. No subscriptions. Just beautifully minimal notes that live right on your desktop — always there when you need them, invisible when you don't.
+Stick puts lightweight notes directly on your desktop. Jot down a thought, paste a link, keep a reminder visible, then get back to work. It is built with SwiftUI, has no Electron shell, no subscriptions, and stores your notes locally.
 
-Designed to feel like a first-party Apple app. Crafted to stay out of your way.
-
----
-
-## Why Stick?
-
-Most note apps live in a tab. Stick lives on your desktop — pinned, present, and pixel-perfect. Write a thought, paste a link, jot a reminder. It's there when you glance up. Gone when you need focus.
-
-- ✦ Native macOS app — built in SwiftUI, zero dependencies
-- ✦ Always-on-desktop — floats beneath your windows, never lost
-- ✦ Gorgeous minimal design — looks like it shipped with your Mac
-- ✦ Lightweight — launches instantly, uses almost no memory
-- ✦ Fully open source — read it, fork it, make it yours
-
----
+Stick uses Apple's Liquid Glass design, so it is made for **macOS 26 and newer**.
 
 ## Install
 
-### Download the app
+### Easiest: ask your AI assistant
 
-Download `Stick.zip` from the latest [GitHub Release](https://github.com/jvalaj/stick/releases), unzip it, and drag `Stick.app` to Applications.
-
-Stick is currently distributed unsigned so it can stay free to publish. On first launch, macOS may block it. Use:
+Paste this into Codex, Cursor, Claude Code, ChatGPT, or another coding assistant:
 
 ```text
-Right-click Stick.app -> Open -> Open
+Install Stick from https://github.com/jvalaj/stick on my Mac. Clone the repo, run ./scripts/build-app.sh, move dist/Stick.app to my Applications folder, and explain how to open it if macOS blocks the unsigned app.
 ```
 
-After the first launch, it opens normally.
-
-### Install from source
+### One-command install
 
 If you have Xcode Command Line Tools installed:
 
@@ -44,75 +26,60 @@ If you have Xcode Command Line Tools installed:
 curl -fsSL https://raw.githubusercontent.com/jvalaj/stick/main/install.sh | bash
 ```
 
-This builds Stick locally and installs it to `~/Applications/Stick.app`.
+This builds Stick locally and installs it to:
 
-### Homebrew
+```text
+~/Applications/Stick.app
+```
 
-Homebrew distribution is supported once a release ZIP is published and a tap is created. The cask template lives at `packaging/homebrew/stick.rb`.
+### Open the app
+
+Stick is currently unsigned so it can stay free to publish. The first time you open it, macOS may block it.
+
+Use:
+
+```text
+Right-click Stick.app -> Open -> Open
+```
+
+After that, it opens normally.
 
 ## Requirements
 
 - macOS 26 or later
-- Xcode Command Line Tools (for `swift`) — install with `xcode-select --install`
+- Xcode Command Line Tools for source installs
 
-## Run
+Install the tools with:
+
+```bash
+xcode-select --install
+```
+
+## Build Manually
 
 ```bash
 git clone https://github.com/jvalaj/stick.git
 cd stick
-swift run
-```
-
-The app launches as a menu-bar item with a dashboard. Click **+ New** to create a sticky note.
-
-## Build a release binary
-
-```bash
-swift build -c release
-.build/release/StickyNotes
-```
-
-## Build a release app
-
-```bash
 ./scripts/build-app.sh
 ```
 
-This creates:
+The app and release zip are created at:
 
 ```text
 dist/Stick.app
 dist/Stick.zip
 ```
 
-Upload `dist/Stick.zip` to a GitHub Release. Without a paid Apple Developer account, the app will be unsigned, so first-time users need to right-click and choose Open.
+## Notes Storage
 
-## Where notes are stored
-
-Notes are saved as JSON in your Application Support folder. The path is shown at the bottom of the dashboard window — click it to reveal the file in Finder.
-
----
+Stick saves notes as JSON in your Application Support folder. The dashboard shows the exact path and can reveal it in Finder.
 
 ## Contributing
 
-Stick is open source and contributions are very welcome. Whether it's a bug fix, a new feature, a design tweak, or just an idea — jump in.
+Stick is open source. Bug reports, UI polish, accessibility improvements, and small focused features are welcome.
 
-**How to contribute:**
-
-1. Fork the repo and create a branch: `git checkout -b my-feature`
-2. Make your changes — keep them focused and minimal
-3. Test the app: `swift run`
-4. Commit with a clear message and open a pull request
-
-**Good first contributions:**
-
-- Bug reports (open an [Issue](https://github.com/jvalaj/stick/issues))
-- UI polish, animations, accessibility improvements
-- New features that fit Stick's minimal philosophy (less is more)
-- Documentation improvements
-
-Please keep the spirit of Stick: native, minimal, beautiful. No new dependencies unless absolutely necessary.
+Please keep the spirit of the app: native, minimal, local-first, and lightweight.
 
 ## License
 
-Stick is released under the [MIT License](LICENSE). You're free to use, modify, distribute, and even sell it. Just keep the copyright notice in your copies.
+Stick is released under the [MIT License](LICENSE).
