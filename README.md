@@ -44,18 +44,19 @@ Right-click Stick.app -> Open -> Open
 
 After that, it opens normally.
 
-## Requirements
+## Notes Storage
 
-- macOS 26 or later
-- Xcode Command Line Tools for source installs
+Stick saves notes as JSON in your Application Support folder. The dashboard shows the exact path and can reveal it in Finder.
 
-Install the tools with:
+## Contributing
 
-```bash
-xcode-select --install
-```
+- **Star this repo** if Stick is useful to you.
+- **Report bugs** by opening an [issue](https://github.com/jvalaj/stick/issues).
+- **Contribute code** with focused fixes, UI polish, accessibility improvements, or small features that keep Stick simple.
 
-## Build Manually
+Please keep the spirit of the app: native, minimal, local-first, and lightweight.
+
+## Build from Source
 
 ```bash
 git clone https://github.com/jvalaj/stick.git
@@ -70,15 +71,20 @@ dist/Stick.app
 dist/Stick.zip
 ```
 
-## Notes Storage
+## Requirements
 
-Stick saves notes as JSON in your Application Support folder. The dashboard shows the exact path and can reveal it in Finder.
+- macOS 26 or later
+- Xcode Command Line Tools for source installs
 
-## Contributing
+Install the tools with:
 
-Stick is open source. Bug reports, UI polish, accessibility improvements, and small focused features are welcome.
+```bash
+xcode-select --install
+```
 
-Please keep the spirit of the app: native, minimal, local-first, and lightweight.
+## Support
+
+Stick is free and open source. If it makes your desktop a little calmer, sharing the repo helps more people find it.
 
 ## License
 
