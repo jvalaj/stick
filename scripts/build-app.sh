@@ -59,6 +59,8 @@ PLIST
 
 chmod +x "$MACOS_DIR/$APP_NAME"
 
+codesign --force --deep --sign - "$APP_DIR"
+
 (
   cd "$DIST_DIR"
   ditto -c -k --keepParent "$APP_NAME.app" "$APP_NAME.zip"

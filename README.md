@@ -4,13 +4,27 @@
 
 **Sticky notes for macOS. Native, minimal, and always in view.**
 
+## Quick install
+
+Paste this into your terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jvalaj/stick/main/install.sh | bash
+```
+
+That's it. The command clones Stick, builds it locally, and installs it to `~/Applications/Stick.app`. Because it builds on your Mac, macOS does not flag it as "damaged" and there is nothing to bypass.
+
+Requires Xcode Command Line Tools. If you don't have them, run `xcode-select --install` first.
+
+---
+
 Stick puts lightweight notes directly on your desktop. Jot down a thought, paste a link, keep a reminder visible, then get back to work. It is built with SwiftUI, has no Electron shell, no subscriptions, and stores your notes locally.
 
 Stick uses Apple's Liquid Glass design, so it is made for **macOS 26 and newer**.
 
-## Install
+## Other ways to install
 
-### Easiest: ask your AI assistant
+### Ask your AI assistant
 
 Paste this into Codex, Cursor, Claude Code, ChatGPT, or another coding assistant:
 
@@ -18,31 +32,15 @@ Paste this into Codex, Cursor, Claude Code, ChatGPT, or another coding assistant
 Install Stick from https://github.com/jvalaj/stick on my Mac. Clone the repo, run ./scripts/build-app.sh, move dist/Stick.app to my Applications folder, and explain how to open it if macOS blocks the unsigned app.
 ```
 
-### One-command install
+### Download the DMG or zip
 
-If you have Xcode Command Line Tools installed:
+You can also grab `Stick.dmg` or `Stick.zip` from `dist/` and drag `Stick.app` into Applications. Because the app is unsigned and downloaded through a browser, macOS will mark it as "damaged" on first open. Fix it with one command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jvalaj/stick/main/install.sh | bash
+xattr -dr com.apple.quarantine /Applications/Stick.app
 ```
 
-This builds Stick locally and installs it to:
-
-```text
-~/Applications/Stick.app
-```
-
-### Open the app
-
-Stick is currently unsigned so it can stay free to publish. The first time you open it, macOS may block it.
-
-Use:
-
-```text
-Right-click Stick.app -> Open -> Open
-```
-
-After that, it opens normally.
+After that, it opens normally. (The old "right-click → Open" trick no longer works for unsigned apps on macOS Sequoia and later — use the command above instead.)
 
 ## Notes Storage
 

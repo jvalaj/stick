@@ -11,6 +11,25 @@ struct StickerData: Codable, Identifiable, Equatable {
     var y: CGFloat
     var width: CGFloat
     var height: CGFloat
+    var pinned: Bool = false
+
+    enum CodingKeys: String, CodingKey { case id, text, x, y, width, height, pinned }
+
+    init(id: UUID, text: String, x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat, pinned: Bool = false) {
+        self.id = id; self.text = text; self.x = x; self.y = y
+        self.width = width; self.height = height; self.pinned = pinned
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        text = try c.decode(String.self, forKey: .text)
+        x = try c.decode(CGFloat.self, forKey: .x)
+        y = try c.decode(CGFloat.self, forKey: .y)
+        width = try c.decode(CGFloat.self, forKey: .width)
+        height = try c.decode(CGFloat.self, forKey: .height)
+        pinned = try c.decodeIfPresent(Bool.self, forKey: .pinned) ?? false
+    }
 }
 
 final class Store {
@@ -46,7 +65,7 @@ final class AppState: ObservableObject {
     }
     @Published var regularBgOpacity: CGFloat = {
         let v = UserDefaults.standard.object(forKey: "regularBgOpacity") as? Double
-        return CGFloat(v ?? 0.0)
+        return CGFloat(v ?? 0.5)
     }() {
         didSet { UserDefaults.standard.set(Double(regularBgOpacity), forKey: "regularBgOpacity") }
     }
@@ -58,6 +77,9 @@ final class AppState: ObservableObject {
     }
     @Published var fontColor: Color = AppState.loadColor("fontColor", default: .white) {
         didSet { AppState.saveColor(fontColor, "fontColor") }
+    }
+    @Published var bgColor: Color = AppState.loadColor("bgColor", default: Color(.sRGB, red: 1, green: 1, blue: 1, opacity: 0)) {
+        didSet { AppState.saveColor(bgColor, "bgColor") }
     }
 
     static func loadColor(_ key: String, default def: Color) -> Color {
@@ -103,7 +125,7 @@ struct FrostedBackground: View {
         return ZStack {
             Color.clear.glassEffect(glass, in: shape)
             if state.glassVariant == 0 {
-                Color.white.opacity(state.regularBgOpacity).clipShape(shape)
+                state.bgColor.opacity(state.regularBgOpacity).clipShape(shape)
             }
         }
     }
@@ -116,6 +138,7 @@ struct StickerView: View {
     @ObservedObject var state: AppState
     let onClose: () -> Void
     let onDrag: () -> Void
+    let onTogglePin: () -> Void
     @State private var hovering = false
 
     private var text: Binding<String> {
@@ -128,6 +151,8 @@ struct StickerView: View {
             }
         )
     }
+
+    private var isPinned: Bool { state.sticker(id)?.pinned ?? false }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -148,6 +173,14 @@ struct StickerView: View {
                     }
                     .buttonStyle(.plain)
                     Spacer()
+                    Button(action: onTogglePin) {
+                        Image(systemName: isPinned ? "pin.fill" : "pin")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(.white.opacity(isPinned ? 1 : (hovering ? 0.9 : 0.6)))
+                            .rotationEffect(.degrees(isPinned ? 0 : 45))
+                            .help(isPinned ? "Unpin" : "Keep on top")
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 10)
             }
@@ -189,7 +222,7 @@ struct StickerView: View {
 final class StickerWindow: NSWindow {
     let stickerID: UUID
 
-    init(data: StickerData, state: AppState, onClose: @escaping (UUID) -> Void) {
+    init(data: StickerData, state: AppState, onClose: @escaping (UUID) -> Void, onTogglePin: @escaping (UUID) -> Void) {
         self.stickerID = data.id
         super.init(
             contentRect: NSRect(x: data.x, y: data.y, width: data.width, height: data.height),
@@ -209,9 +242,8 @@ final class StickerWindow: NSWindow {
         self.isOpaque = false
         self.backgroundColor = .clear
         self.hasShadow = false // SwiftUI provides shadow
-        self.level = .normal
-        self.collectionBehavior = [.stationary]
         self.minSize = NSSize(width: 160, height: 140)
+        applyPinned(data.pinned)
 
         let id = data.id
         let view = StickerView(
@@ -221,7 +253,8 @@ final class StickerWindow: NSWindow {
             onDrag: { [weak self] in
                 guard let self, let event = NSApp.currentEvent else { return }
                 self.performDrag(with: event)
-            }
+            },
+            onTogglePin: { onTogglePin(id) }
         )
         self.contentView = FirstMouseHostingView(rootView: view)
         installActiveBlurFix(on: self)
@@ -232,6 +265,30 @@ final class StickerWindow: NSWindow {
     // Keep Liquid Glass `.clear` from desaturating when another app takes
     // focus. Glass reads `isMainWindow` to decide active vs. inactive look.
     override var isMainWindow: Bool { true }
+
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        frameRect
+    }
+
+    func applyPinned(_ pinned: Bool) {
+        let wasVisible = self.isVisible
+        if pinned {
+            self.level = .floating
+            self.collectionBehavior = [.stationary, .canJoinAllSpaces]
+            if wasVisible { self.orderFrontRegardless() }
+        } else {
+            // Pull the window off whatever space it's currently joining (e.g. a
+            // fullscreen app's space) and drop it behind other windows on its
+            // home desktop space.
+            self.level = .normal
+            self.orderOut(nil)
+            self.collectionBehavior = [.stationary]
+            if wasVisible {
+                self.orderBack(nil)
+                self.resignKey()
+            }
+        }
+    }
 }
 
 // NSHostingView subclass that lets clicks reach the SwiftUI gestures even
@@ -274,6 +331,7 @@ struct DashboardView: View {
     let onNew: () -> Void
     let onFocus: (UUID) -> Void
     let onDelete: (UUID) -> Void
+    let onHide: () -> Void
     @State private var hoveredID: UUID? = nil
 
     var body: some View {
@@ -283,6 +341,16 @@ struct DashboardView: View {
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundColor(.primary)
                 Spacer()
+                Button(action: onHide) {
+                    Image(systemName: "eye.slash")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.primary.opacity(0.7))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(Capsule().fill(Color.primary.opacity(0.08)))
+                }
+                .buttonStyle(.plain)
+                .help("Hide dashboard")
                 Button(action: onNew) {
                     HStack(spacing: 4) {
                         Image(systemName: "plus")
@@ -446,38 +514,55 @@ struct SettingsPanel: View {
 
             if expanded {
                 Group {
+                    sectionLabel("Text")
                     sliderRow("textformat.size", Binding(
                         get: { (state.fontSize - 10) / 14 },
                         set: { state.fontSize = 10 + $0 * 14 }
                     ))
-                    HStack(spacing: 8) {
-                        Image(systemName: "paintpalette")
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                            .frame(width: 12)
-                        ColorPicker("Font", selection: $state.fontColor, supportsOpacity: true)
-                            .labelsHidden()
-                        Text("Font color")
-                            .font(.system(size: 10, design: .rounded))
-                            .foregroundColor(.secondary)
-                        Spacer()
-                    }
+                    colorRow(icon: "paintpalette", label: "Font color", selection: $state.fontColor)
 
-                    Divider().padding(.vertical, 2)
+                    Divider().padding(.vertical, 4)
 
-                    Picker("Variant", selection: $state.glassVariant) {
+                    sectionLabel("Background")
+                    Picker("", selection: $state.glassVariant) {
                         Text("Regular").tag(0)
                         Text("Clear").tag(1)
                     }
                     .pickerStyle(.segmented)
-                    .controlSize(.mini)
+                    .labelsHidden()
+                    .controlSize(.large)
+                    .frame(maxWidth: .infinity)
 
                     if state.glassVariant == 0 {
-                        sliderRow("rectangle.fill", $state.regularBgOpacity)
+                        colorRow(icon: "paintbrush", label: "Background color", selection: $state.bgColor)
+                        sliderRow("circle.lefthalf.filled", $state.regularBgOpacity)
                     }
                 }
                 .transition(.opacity)
             }
+        }
+    }
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 9, weight: .semibold, design: .rounded))
+            .foregroundColor(.secondary.opacity(0.8))
+            .tracking(0.5)
+            .padding(.top, 2)
+    }
+
+    private func colorRow(icon: String, label: String, selection: Binding<Color>) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+                .frame(width: 12)
+            ColorPicker(label, selection: selection, supportsOpacity: true)
+                .labelsHidden()
+            Text(label)
+                .font(.system(size: 10, design: .rounded))
+                .foregroundColor(.secondary)
+            Spacer()
         }
     }
 
@@ -566,6 +651,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         observers.append(nc.addObserver(forName: NSWindow.didResizeNotification, object: nil, queue: .main) { [weak self] n in
             self?.syncFrame(n)
         })
+        // Reposition color panel next to dashboard whenever it appears.
+        observers.append(nc.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { [weak self] n in
+            guard let panel = n.object as? NSColorPanel, let dash = self?.dashboard else { return }
+            let d = dash.frame
+            let p = panel.frame
+            var x = d.minX - p.width - 8
+            if x < 8 { x = d.maxX + 8 }
+            let y = max(8, d.maxY - p.height)
+            panel.setFrameOrigin(NSPoint(x: x, y: y))
+        })
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -589,7 +684,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 state: state,
                 onNew: { [weak self] in self?.newSticker() },
                 onFocus: { [weak self] id in self?.focusSticker(id) },
-                onDelete: { [weak self] id in self?.deleteSticker(id) }
+                onDelete: { [weak self] id in self?.deleteSticker(id) },
+                onHide: { [weak self] in self?.dashboard?.orderOut(nil) }
             ))
             host.frame = NSRect(x: 0, y: 0, width: 280, height: 360)
             host.autoresizingMask = [.width, .height]
@@ -617,11 +713,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func spawnWindow(for s: StickerData) {
-        let w = StickerWindow(data: s, state: state, onClose: { [weak self] id in
-            self?.closeStickerWindow(id)
-        })
+        let w = StickerWindow(
+            data: s,
+            state: state,
+            onClose: { [weak self] id in self?.closeStickerWindow(id) },
+            onTogglePin: { [weak self] id in self?.togglePin(id) }
+        )
         stickerWindows[s.id] = w
         w.orderFrontRegardless()
+    }
+
+    private func togglePin(_ id: UUID) {
+        guard var s = state.sticker(id) else { return }
+        s.pinned.toggle()
+        state.upsert(s)
+        stickerWindows[id]?.applyPinned(s.pinned)
     }
 
     private func closeStickerWindow(_ id: UUID) {
